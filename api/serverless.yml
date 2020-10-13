@@ -1,0 +1,75 @@
+service:
+  name: ${self:custom.name}
+
+plugins:
+  - serverless-webpack
+  - serverless-prune-plugin
+  - serverless-offline
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  region: ap-northeast-2
+  stage: ${env:STAGE}
+  tracing:
+    apiGateway: true
+    lambda: true
+  apiGateway:
+    minimumCompressionSize: 1024
+  environment:
+    STAGE: ${env:STAGE}
+    GAME_NAME: ${env:GAME_NAME}
+    REDIS_HOST: ${env:REDIS_HOST}
+    REDIS_PASSWORD: ${env:REDIS_PASSWORD}
+    WS_ENDPOINT: ${env:WS_ENDPOINT}
+    GAME_ACTOR_LAMBDA_NAME: ${self:custom.gameActorLambdaName}
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - lambda:InvokeFunction
+      Resource:
+        - Fn::Join:
+            - ":"
+            - - "arn:aws:lambda"
+              - Ref: "AWS::Region"
+              - Ref: "AWS::AccountId"
+              - "function"
+              - ${self:custom.gameActorLambdaName}
+
+custom:
+  name: ${env:GAME_NAME, "game"}-api${env:RELEASE_POSTFIX, ""}
+  gameActorLambdaName: ${self:service.name}-${self:provider.stage}-game
+  prune:
+    automatic: true
+    number: 7
+
+package:
+  individually: true
+
+functions:
+  connect:
+    handler: src/proxy/connect.handle
+    timeout: 3
+    memorySize: 256
+    events:
+      - websocket:
+          route: $connect
+  disconnect:
+    handler: src/proxy/disconnect.handle
+    timeout: 3
+    memorySize: 256
+    events:
+      - websocket:
+          route: $disconnect
+  message:
+    handler: src/proxy/message.handle
+    timeout: 3
+    memorySize: 256
+    events:
+      - websocket:
+          route: $default
+  game:
+    handler: src/game/actor.handle
+    timeout: 900
+    memorySize: 1024
