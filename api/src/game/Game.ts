@@ -1,3 +1,4 @@
+import GameClientRequest from "../shared/game/GameClientRequest";
 import GameConnectionIdRequest from "../shared/game/GameConnectionIdRequest";
 import GameContext from "./context/GameContext";
 import GameEnterRequest from "../shared/game/GameEnterRequest";
@@ -10,12 +11,16 @@ import NetworkSystem from "./system/NetworkSystem";
 import Ticker from "./tick/Ticker";
 import constants from "./constants";
 import dropConnection from "./response/drop";
+import filterClientRequest from "./filterClientRequest";
+import { getLogger } from "@yingyeothon/slack-logger";
 import getPlayerColor from "./support/getPlayerColor";
 import isEndOfGame from "./context/isEndOfGame";
-import logger from "./logger";
 import newGameContext from "./context/newGameContext";
+import newRandomCard from "./context/newRandomCard";
 import processChange from "./processChange";
 import sleep from "./tick/sleep";
+
+const logger = getLogger("game", __filename);
 
 export default class Game {
   private readonly users: GameUser[];
@@ -32,8 +37,6 @@ export default class Game {
     members: GameMember[],
     private readonly pollRequests: () => Promise<GameRequest[]>
   ) {
-    this.context = newGameContext();
-
     // Setup game context from members.
     this.users = members
       .filter((member) => !member.observer)
@@ -45,6 +48,8 @@ export default class Game {
           connectionId: "",
           load: false,
           memberId: member.memberId,
+          hp: 100,
+          cards: newRandomCard(),
         })
       );
     this.observers = members
@@ -55,6 +60,8 @@ export default class Game {
           connectionId: "",
         })
       );
+
+    this.context = newGameContext(this.users);
 
     // Initialize other systems.
     this.networkSystem = new NetworkSystem(
@@ -71,30 +78,52 @@ export default class Game {
         await this.stageRunning();
       }
     } catch (error) {
-      logger.error(`Error in game logic`, error);
+      logger.error({ error }, `Error in game logic`);
     }
     await this.stageEnd();
   }
 
   private async stageWait() {
-    logger.info(`Game WAIT-stage`, this.gameId, this.users);
+    logger.info({ gameId: this.gameId, users: this.users }, `Game WAIT-stage`);
 
     this.ticker = new Ticker(GameStage.Wait, constants.gameWaitSeconds * 1000);
     while (this.ticker.isAlive()) {
       const requests = await this.pollRequests();
-      await this.processEnterLeaveLoad(requests);
-
-      if (Object.keys(this.connectedUsers).length === this.users.length) {
+      await this.processMessages(requests, "enter", this.onEnter.bind(this));
+      await this.processMessages(requests, "leave", this.onLeave.bind(this));
+      await this.ticker.checkAgeChanged(this.broadcastStage.bind(this));
+      if (this.isFullyConnected()) {
         break;
       }
-
-      await this.ticker.checkAgeChanged(this.broadcastStage);
       await sleep(constants.loopInterval);
+    }
+
+    await sleep(1000);
+    await this.broadcastLoad();
+  }
+
+  private async broadcastLoad(): Promise<void> {
+    try {
+      await Promise.all(
+        this.users.map((u) => this.onLoad({ connectionId: u.connectionId }))
+      );
+    } catch (error) {
+      logger.error(
+        { gameId: this.gameId, users: this.users, error },
+        "Cannot broadcast game context"
+      );
     }
   }
 
+  private isFullyConnected(): boolean {
+    return Object.keys(this.connectedUsers).length === this.users.length;
+  }
+
   private async stageRunning() {
-    logger.info(`Game RUNNING-stage`, this.gameId, this.users);
+    logger.info(
+      { gameId: this.gameId, users: this.users },
+      `Game RUNNING-stage`
+    );
 
     this.lastMillis = Date.now();
     this.ticker = new Ticker(
@@ -103,48 +132,43 @@ export default class Game {
     );
     while (this.ticker.isAlive()) {
       const requests = await this.pollRequests();
-      await this.processEnterLeaveLoad(requests);
-
-      await this.processChanges(requests);
+      await this.processMessages(requests, "leave", this.onLeave.bind(this));
+      await this.processChanges(filterClientRequest(requests));
       await this.update();
 
-      await this.ticker.checkAgeChanged(this.broadcastStage);
+      await this.ticker.checkAgeChanged(this.broadcastStage.bind(this));
       await sleep(constants.loopInterval);
 
-      if (isEndOfGame(this.context)) {
+      if (isEndOfGame(this.context, this.ticker) || !this.isFullyConnected()) {
         break;
       }
     }
   }
 
   private async stageEnd() {
-    logger.info(`Game END-stage`, this.gameId);
+    logger.info({ gameId: this.gameId, users: this.users }, `Game END-stage`);
     await this.networkSystem.end();
     await Promise.all(Object.keys(this.connectedUsers).map(dropConnection));
   }
 
-  private async processEnterLeaveLoad(requests: GameRequest[]) {
-    // TODO Error tolerance
+  private async processMessages(
+    requests: GameRequest[],
+    type: GameRequest["type"],
+    handler: (request: GameRequest) => Promise<unknown>
+  ): Promise<void> {
     for (const request of requests) {
+      if (request.type !== type) {
+        continue;
+      }
       try {
-        switch (request.type) {
-          case "enter":
-            await this.onEnter(request);
-            break;
-          case "leave":
-            this.onLeave(request);
-            break;
-          case "load":
-            await this.onLoad(request);
-            break;
-        }
+        await handler(request);
       } catch (error) {
-        logger.error(`Error in request`, request, error);
+        logger.error({ request, error }, `Error in request`);
       }
     }
   }
 
-  private async processChanges(requests: GameRequest[]) {
+  private async processChanges(requests: GameClientRequest[]) {
     const promises: Array<Promise<void>> = [];
     for (const request of requests) {
       if (!this.isValidUser(request)) {
@@ -162,7 +186,7 @@ export default class Game {
           promises.push(maybe);
         }
       } catch (error) {
-        logger.error(`Error in processing change`, request, error);
+        logger.error({ request, error }, `Error in processing change`);
       }
     }
     if (promises.length === 0) {
@@ -171,8 +195,9 @@ export default class Game {
     try {
       await Promise.all(promises);
     } catch (error) {
-      logger.error(`Error in awaiting updates`, error);
+      logger.error({ error }, `Error in awaiting updates`);
     }
+    await this.broadcastLoad();
   }
 
   private async update() {
@@ -202,11 +227,10 @@ export default class Game {
       newbie.load = false;
 
       this.connectedUsers[connectionId] = newbie;
-      logger.debug(
+      logger.info(
         { gameId: this.gameId, newbie, users: this.users },
         `Game newbie`
       );
-      await this.networkSystem.newbie(newbie);
     }
   }
 
@@ -223,6 +247,11 @@ export default class Game {
       leaver.load = false;
       delete this.connectedUsers[connectionId];
 
+      logger.info(
+        { gameId: this.gameId, leaver, users: this.users },
+        `Game leave`
+      );
+
       // No reset for leaver because they can reconnect.
     }
   }
@@ -234,19 +263,14 @@ export default class Game {
     );
     if (observer) {
       logger.debug({ gameId: this.gameId, observer }, `Game load observer`);
-      await this.networkSystem.loadObserver(
-        observer,
-        this.ticker!.stage,
-        this.ticker!.age
-      );
+      await this.networkSystem.loadObserver(observer);
     } else if (user) {
       user.load = true;
-      // TODO
       logger.debug(
         { gameId: this.gameId, connectionId, users: this.users },
         `Game load`
       );
-      await this.networkSystem.load(user, this.ticker!.stage, this.ticker!.age);
+      await this.networkSystem.load(user, this.context.turn);
     }
   }
 

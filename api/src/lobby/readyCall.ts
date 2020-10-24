@@ -3,13 +3,16 @@ import * as https from "https";
 
 import { parse as parseURL } from "url";
 
-export default function readyCall(callbackUrl: string) {
+export default function readyCall(callbackUrl: string): Promise<void> {
   return httpRequest(callbackUrl, {
     method: "PUT",
   });
 }
 
-function httpRequest(url: string, requestArgs: http.ClientRequestArgs) {
+function httpRequest(
+  url: string,
+  requestArgs: http.ClientRequestArgs
+): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const request =
       parseURL(url).protocol === "http:" ? http.request : https.request;

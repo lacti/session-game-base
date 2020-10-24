@@ -1,4 +1,5 @@
-import { ConsoleLogger } from "@yingyeothon/logger";
+import { flushSlack, getLogger } from "@yingyeothon/slack-logger";
+
 import Game from "./Game";
 import GameActorStartEvent from "../shared/actor/GameActorStartEvent";
 import GameRequest from "../shared/game/GameRequest";
@@ -13,55 +14,59 @@ import redisDel from "@yingyeothon/naive-redis/lib/del";
 import redisSet from "@yingyeothon/naive-redis/lib/set";
 import saveActorStartEvent from "../shared/actor/saveActorStartEvent";
 
-const logger = new ConsoleLogger(`debug`);
+const logger = getLogger("handle:actor", __filename);
 
 export const handle: Handler<GameActorStartEvent, void> = async (event) => {
-  logger.debug(`Start a new game lambda`, event);
+  logger.info({ event }, `Start a new game lambda`);
 
-  const { gameId, members } = event;
-  if (!gameId) {
-    logger.error(`No gameId from payload`, event);
-    return;
-  }
+  try {
+    const { gameId, members } = event;
+    if (!gameId) {
+      logger.error({ event }, `No gameId from payload`);
+      return;
+    }
 
-  // First, store game context into Redis.
-  await saveActorStartEvent({
-    event,
-    set: (key, value) =>
-      redisSet(redisConnection, key, value, {
-        expirationMillis: constants.gameAliveSeconds * 1000,
-      }),
-  });
+    // First, store game context into Redis.
+    await saveActorStartEvent({
+      event,
+      set: (key, value) =>
+        redisSet(redisConnection, key, value, {
+          expirationMillis: constants.gameAliveSeconds * 1000,
+        }),
+    });
 
-  // Send the ready signal to the Lobby.
-  if (event.callbackUrl !== undefined) {
-    const response = await readyCall(event.callbackUrl);
-    logger.debug(`Mark this game as ready`, response);
-  }
+    // Start the game loop.
+    await actorEventLoop<GameRequest>({
+      ...actorSubsys,
+      id: gameId,
+      loop: async (poll) => {
+        logger.info({ gameId, members }, `Start a game with id`);
+        const game = new Game(gameId, members, async () => {
+          const messages = await poll();
+          if (messages.length > 0) {
+            logger.info({ messages }, `Process game messages`);
+          }
+          return messages;
+        });
+        try {
+          // Send the ready signal to the Lobby.
+          if (event.callbackUrl !== undefined) {
+            const response = await readyCall(event.callbackUrl);
+            logger.info({ response }, `Mark this game as ready`);
+          }
 
-  // Start the game loop.
-  await actorEventLoop<GameRequest>({
-    ...actorSubsys,
-    id: gameId,
-    loop: async (poll) => {
-      logger.info(`Start a game with id`, gameId, members);
-      const game = new Game(gameId, members, async () => {
-        const messages = await poll();
-        if (messages.length > 0) {
-          logger.info(`Process game messages`, messages);
+          await game.run();
+        } catch (error) {
+          logger.error({ gameId, error }, `Unexpected error from game`);
         }
-        return messages;
-      });
-      try {
-        await game.run();
-      } catch (error) {
-        logger.error(`Unexpected error from game`, gameId, error);
-      }
-      logger.info(`End of the game`, gameId, members);
-      await clearActorStartEvent({
-        gameId,
-        del: (key) => redisDel(redisConnection, key),
-      });
-    },
-  });
+        logger.info({ gameId, members }, `End of the game`);
+        await clearActorStartEvent({
+          gameId,
+          del: (key) => redisDel(redisConnection, key),
+        });
+      },
+    });
+  } finally {
+    await flushSlack();
+  }
 };

@@ -1,15 +1,16 @@
-import { ConsoleLogger } from "@yingyeothon/logger";
 import actorSubsysKeys from "../shared/actor/actorSubsysKeys";
+import asYlogger from "@yingyeothon/slack-logger/lib/asYlogger";
 import awaiterResolve from "@yingyeothon/actor-system-redis-support/lib/awaiter/resolve";
 import awaiterWait from "@yingyeothon/actor-system-redis-support/lib/awaiter/wait";
 import constants from "./constants";
+import { getLogger } from "@yingyeothon/slack-logger";
 import lockAcquire from "@yingyeothon/actor-system-redis-support/lib/lock/acquire";
 import lockRelease from "@yingyeothon/actor-system-redis-support/lib/lock/release";
 import queueFlush from "@yingyeothon/actor-system-redis-support/lib/queue/flush";
 import queueSize from "@yingyeothon/actor-system-redis-support/lib/queue/size";
 import redisConnection from "./redisConnection";
 
-const logger = new ConsoleLogger(`info`);
+const logger = asYlogger(getLogger("actorSubsys", __filename));
 
 const actorSubsys = {
   awaiter: {

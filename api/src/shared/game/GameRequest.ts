@@ -1,7 +1,7 @@
 import GameEnterRequest from "./GameEnterRequest";
 import GameLeaveRequest from "./GameLeaveRequest";
-import GameLoadRequest from "./GameLoadRequest";
+import GamePickCardRequest from "./GamePickCardRequest";
 
-type GameRequest = GameEnterRequest | GameLeaveRequest | GameLoadRequest;
+type GameRequest = GameEnterRequest | GameLeaveRequest | GamePickCardRequest;
 
 export default GameRequest;

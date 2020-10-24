@@ -2,22 +2,22 @@ import GameStage from "../GameStage";
 
 export default class Ticker {
   private readonly startMillis: number = Date.now();
-  private ageBefore: number = -1;
+  private ageBefore = -1;
 
   constructor(
     public readonly stage: GameStage,
     private readonly aliveMillis: number
   ) {}
 
-  public get age() {
+  public get age(): number {
     return this.calculateAge();
   }
 
-  public isAlive = () => this.elapsed() < this.aliveMillis;
+  public isAlive = (): boolean => this.elapsed() < this.aliveMillis;
 
   public checkAgeChanged = async (
-    onChanged: (stage: GameStage, age: number) => Promise<any>
-  ) => {
+    onChanged: (stage: GameStage, age: number) => Promise<unknown>
+  ): Promise<void> => {
     const newAge = this.calculateAge();
     if (this.ageBefore === newAge) {
       return;
@@ -26,7 +26,7 @@ export default class Ticker {
     await onChanged(this.stage, newAge);
   };
 
-  private calculateAge = () => Math.floor(this.elapsed() / 1000);
+  private calculateAge = (): number => Math.floor(this.elapsed() / 1000);
 
   private elapsed = () => Date.now() - this.startMillis;
 }

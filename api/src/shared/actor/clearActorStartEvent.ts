@@ -5,7 +5,7 @@ export default async function clearActorStartEvent({
   del,
 }: {
   gameId: string;
-  del: (key: string) => Promise<any>;
-}) {
+  del: (key: string) => Promise<unknown>;
+}): Promise<unknown> {
   return del(actorSubsysKeys.keyPrefixOfEvent + gameId);
 }

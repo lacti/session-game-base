@@ -6,7 +6,7 @@ export default async function saveActorStartEvent({
   set,
 }: {
   event: GameActorStartEvent;
-  set: (key: string, value: string) => Promise<any>;
+  set: (key: string, value: string) => Promise<unknown>;
 }): Promise<boolean> {
   if (!event.gameId) {
     return false;

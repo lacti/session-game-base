@@ -1,7 +1,9 @@
 import FakeConnectionId from "./models/FakeConnectionId";
 import env from "../support/env";
-import logger from "../logger";
+import { getLogger } from "@yingyeothon/slack-logger";
 import { newApiGatewayManagementApi } from "@yingyeothon/aws-apigateway-management-api";
+
+const logger = getLogger("dropConnection", __filename);
 
 export default async function dropConnection(
   connectionId: string
@@ -19,7 +21,10 @@ export default async function dropConnection(
       .promise();
     return true;
   } catch (error) {
-    logger.error(`Cannot disconnect`, connectionId, error);
+    (/GoneException/.test(error.name) ? logger.debug : logger.error)(
+      { connectionId, error },
+      `Cannot disconnect`
+    );
     return false;
   }
 }

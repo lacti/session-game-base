@@ -4,5 +4,6 @@ export default interface StageResponse {
   type: "stage";
   payload: {
     stage: GameStage;
+    age: number;
   };
 }

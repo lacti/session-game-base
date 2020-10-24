@@ -7,11 +7,9 @@ import handleSocketClose from "./handleSocketClose";
 import handleSocketError from "./handleSocketError";
 import handleSocketMessageWith from "./handleSocketMessageWith";
 import newGameContext from "./newGameContext";
-import sleep from "../../utils/sleep";
 import updateGlobalState from "../global/updateGlobalState";
 
 const deferredDisconnectDelayMillis = 500;
-const deferredLoadDelayMillis = 100;
 
 export default function startGameStateMachine(start: GameStart) {
   const connectionUrl = buildGameConnectionUrl(start);
@@ -35,11 +33,6 @@ export default function startGameStateMachine(start: GameStart) {
       currentGameId: start.gameId,
       gameContext: newGameContext(),
       send: onThisGame(sendRequest),
-    });
-    sleep(deferredLoadDelayMillis).then(() => {
-      sendRequest({
-        type: "load",
-      });
     });
   }
 

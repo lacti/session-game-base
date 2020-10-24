@@ -11,6 +11,6 @@ const candidates = [
   "#AF7AC5",
 ];
 
-export default function getPlayerColor(index: number) {
+export default function getPlayerColor(index: number): string {
   return candidates[index];
 }

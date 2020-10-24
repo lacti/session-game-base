@@ -1,5 +1,5 @@
-import ClientLoadRequest from "./ClientLoadRequest";
+import ClickPickCardRequest from "./ClickPickCardRequest";
 
-type ClientRequest = ClientLoadRequest;
+type ClientRequest = ClickPickCardRequest;
 
 export default ClientRequest;

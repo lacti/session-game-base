@@ -3,7 +3,7 @@ import processTimer from "./processTimer";
 export default class Timer {
   private readonly interval: number;
 
-  private acc: number = 0;
+  private acc = 0;
 
   constructor(interval: number) {
     this.interval = interval;

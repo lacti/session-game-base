@@ -1,20 +1,20 @@
-import GameStage from "../../GameStage";
-import User from "../../user/models/User";
+import GameUser from "../../user/models/GameUser";
 
 interface UserLoadResponse {
   type: "load";
-  me: User;
-  users: User[];
-  stage: GameStage;
-  age: number;
+  payload: {
+    me: GameUser;
+    enemy: GameUser;
+    myTurn: boolean;
+  };
 }
 
 interface ObserveLoadResponse {
   type: "load";
-  users: User[];
-  stage: GameStage;
-  age: number;
-  observer: true;
+  payload: {
+    users: GameUser[];
+    observer: true;
+  };
 }
 
 type LoadResponse = UserLoadResponse | ObserveLoadResponse;

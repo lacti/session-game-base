@@ -17,13 +17,17 @@ provider:
   apiGateway:
     minimumCompressionSize: 1024
   environment:
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
     STAGE: ${env:STAGE}
     GAME_NAME: ${env:GAME_NAME}
     REDIS_HOST: ${env:REDIS_HOST}
     REDIS_PASSWORD: ${env:REDIS_PASSWORD}
     WS_ENDPOINT: ${env:WS_ENDPOINT}
     GAME_ACTOR_LAMBDA_NAME: ${self:custom.gameActorLambdaName}
-    AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+    SLACK_WEBHOOK_URL: ${env:SLACK_WEBHOOK_URL}
+    SLACK_CHANNEL: ${env:SLACK_CHANNEL}
+    SLACK_LOG_LEVEL: ${env:SLACK_LOG_LEVEL, "warn"}
+    CONSOLE_LOG_LEVEL: ${env:CONSOLE_LOG_LEVEL, "trace"}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -73,3 +77,9 @@ functions:
     handler: src/game/actor.handle
     timeout: 900
     memorySize: 1024
+  debug:
+    handler: src/proxy/debug.handle
+    timeout: 6
+    memorySize: 256
+    events:
+      - http: POST /debug

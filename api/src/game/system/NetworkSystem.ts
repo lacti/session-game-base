@@ -1,5 +1,4 @@
 import EndBroadcast from "../response/models/EndBroadcast";
-import EnterBroadcast from "../response/models/EnterBroadcast";
 import GameContext from "../context/GameContext";
 import GameObserver from "../user/models/GameObserver";
 import GameStage from "../GameStage";
@@ -31,38 +30,24 @@ export default class NetworkSystem {
     });
   }
 
-  public async newbie(newbie: GameUser): Promise<void> {
-    await broadcast<EnterBroadcast>(
-      this.connectionIds.filter((id) => id !== newbie.connectionId),
-      { type: "enter", newbie: { index: newbie.index, color: newbie.color } }
-    );
-  }
-
-  public async load(
-    user: GameUser,
-    stage: GameStage,
-    age: number
-  ): Promise<void> {
+  public async load(user: GameUser, currentTurn: number): Promise<void> {
     await reply<LoadResponse>(user.connectionId, {
       type: "load",
-      me: user,
-      users: this.users,
-      stage,
-      age,
+      payload: {
+        me: user,
+        enemy: this.users.filter((u) => u !== user)[0],
+        myTurn: user.index === currentTurn,
+      },
     });
   }
 
-  public async loadObserver(
-    user: GameObserver,
-    stage: GameStage,
-    age: number
-  ): Promise<void> {
+  public async loadObserver(user: GameObserver): Promise<void> {
     await reply<LoadResponse>(user.connectionId, {
       type: "load",
-      users: this.users,
-      stage,
-      age,
-      observer: true,
+      payload: {
+        users: this.users,
+        observer: true,
+      },
     });
   }
 
@@ -72,7 +57,10 @@ export default class NetworkSystem {
         ...this.users.map((u) => u.connectionId),
         ...this.observers.map((u) => u.connectionId),
       ].map((connectionId) =>
-        reply<StageBroadcast>(connectionId, { type: "stage", stage, age })
+        reply<StageBroadcast>(connectionId, {
+          type: "stage",
+          payload: { stage, age },
+        })
       )
     );
   }

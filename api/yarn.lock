@@ -1748,6 +1748,15 @@
   resolved "https://registry.yarnpkg.com/@yingyeothon/naive-socket/-/naive-socket-0.3.0.tgz#e7d0a365af3c986778418933a5250abea7fc29c9"
   integrity sha512-F8mIIyprAL8howSFYY1uLIceRh0mvE27eJsAsf9fdC5k9N+oPe6dU5wNJ67ZWaAWIG93J+7JYawKwh6nnp9s6Q==
 
+"@yingyeothon/slack-logger@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@yingyeothon/slack-logger/-/slack-logger-1.0.1.tgz#883a36beed9e18a421490cd545ea6587a36ef489"
+  integrity sha512-iZzcpT+R2Q8wAa9zt8tr/OLMHkHaQtdy6W6QgjTNYURBZD6FfzhVPbkLB0zZnvy/p63Lfs3MhRgcimY9tIkGtw==
+  dependencies:
+    "@yingyeothon/logger" "^0.3.1"
+    node-fetch "^2.6.1"
+    serialize-error "^7.0.1"
+
 abab@^2.0.3:
   version "2.0.5"
   resolved "https://registry.yarnpkg.com/abab/-/abab-2.0.5.tgz#c0b678fb32d60fc1219c784d6a826fe385aeb79a"
@@ -8612,6 +8621,13 @@ send@0.17.1:
     range-parser "~1.2.1"
     statuses "~1.5.0"
 
+serialize-error@^7.0.1:
+  version "7.0.1"
+  resolved "https://registry.yarnpkg.com/serialize-error/-/serialize-error-7.0.1.tgz#f1360b0447f61ffb483ec4157c737fab7d778e18"
+  integrity sha512-8I8TjW5KMOKsZQTvoxjuSIa7foAwPWGOts+6o7sgjz41/qMD9VQHEDxi6PBvK2l0MXUmqZyNpUK+T2tQaaElvw==
+  dependencies:
+    type-fest "^0.13.1"
+
 serialize-javascript@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/serialize-javascript/-/serialize-javascript-4.0.0.tgz#b525e1238489a5ecfc42afacc3fe99e666f4b1aa"
@@ -9715,6 +9731,11 @@ type-fest@^0.11.0:
   version "0.11.0"
   resolved "https://registry.yarnpkg.com/type-fest/-/type-fest-0.11.0.tgz#97abf0872310fed88a5c466b25681576145e33f1"
   integrity sha512-OdjXJxnCN1AvyLSzeKIgXTXxV+99ZuXl3Hpo9XpJAv9MBcHrrJOQ5kV7ypXOuQie+AmWG25hLbiKdwYTifzcfQ==
+
+type-fest@^0.13.1:
+  version "0.13.1"
+  resolved "https://registry.yarnpkg.com/type-fest/-/type-fest-0.13.1.tgz#0172cb5bce80b0bd542ea348db50c7e21834d934"
+  integrity sha512-34R7HTnG0XIJcBSn5XhDd7nNFPRcXYRZrBB2O2jdKqYODldSzBAqzsWoZYYvduky73toYS/ESqxPvkDf/F0XMg==
 
 type-fest@^0.6.0:
   version "0.6.0"

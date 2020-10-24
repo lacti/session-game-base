@@ -15,6 +15,7 @@
     "@yingyeothon/aws-apigateway-management-api": "^2.536.0",
     "@yingyeothon/logger": "^0.3.1",
     "@yingyeothon/naive-redis": "^0.3.0",
+    "@yingyeothon/slack-logger": "^1.0.1",
     "source-map-support": "^0.5.19",
     "uuid": "^8.3.1"
   },

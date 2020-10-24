@@ -1,6 +1,8 @@
 import RespondResult from "./models/RespondResult";
-import logger from "../logger";
+import { getLogger } from "@yingyeothon/slack-logger";
 import reply from "./reply";
+
+const logger = getLogger("broadcast", __filename);
 
 export default async function broadcast<T extends { type: string }>(
   connectionIds: string[],
@@ -20,6 +22,6 @@ export default async function broadcast<T extends { type: string }>(
     (acc, cur) => Object.assign(acc, cur),
     {} as RespondResult
   );
-  logger.info(`Broadcast`, response, map);
+  logger.debug({ response, map }, `Broadcast`);
   return map;
 }

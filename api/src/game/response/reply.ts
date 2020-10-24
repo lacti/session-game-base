@@ -1,17 +1,19 @@
 import { ApiGatewayManagementApi } from "aws-sdk";
 import FakeConnectionId from "./models/FakeConnectionId";
 import env from "../support/env";
-import logger from "../logger";
+import { getLogger } from "@yingyeothon/slack-logger";
 
 const apimgmt = new ApiGatewayManagementApi({
   endpoint: env.isOffline ? `http://localhost:3001` : env.webSocketEndpoint,
 });
 
+const logger = getLogger("reply", __filename);
+
 export default async function reply<T extends { type: string }>(
   connectionId: string,
   response: T
 ): Promise<boolean> {
-  if (connectionId === FakeConnectionId) {
+  if (connectionId === FakeConnectionId || !connectionId) {
     return Promise.resolve(true);
   }
   try {
@@ -21,10 +23,13 @@ export default async function reply<T extends { type: string }>(
         Data: JSON.stringify(response),
       })
       .promise();
-    logger.debug(`Reply`, connectionId, response);
+    logger.debug({ connectionId, response }, `Reply`);
     return true;
   } catch (error) {
-    logger.error(`Cannot reply to`, connectionId, response, error);
+    (/GoneException/.test(error.name) ? logger.debug : logger.error)(
+      { connectionId, response, error },
+      `Cannot reply to`
+    );
     return false;
   }
 }
