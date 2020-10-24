@@ -1,0 +1,17 @@
+#!/bin/bash
+
+source_up
+
+export GAME_NAME="GAME_NAME"
+export REDIS_HOST="REDIS_HOST"
+export REDIS_PASSWORD="REDIS_PASSWORD"
+
+if [[ "${STAGE}" = "dev" ]]; then
+  export DEV_CUSTOM_DOMAIN="DEV.CUSTOM.DOMAIN"
+  export WS_ENDPOINT="${DEV_CUSTOM_DOMAIN}/${GAME_NAME}"
+  # export RELEASE_POSTFIX=""
+else
+  export CUSTOM_DOMAIN="CUSTOM.DOMAIN"
+  export WS_ENDPOINT="${CUSTOM_DOMAIN}/${GAME_NAME}"
+  # export RELEASE_POSTFIX=""
+fi
