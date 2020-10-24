@@ -1,0 +1,28 @@
+#!/bin/bash
+
+source_up
+
+if [[ "${STAGE}" = "dev" ]]; then
+  # connection info
+  export REACT_APP_AUTH_URL="https://DEV_AUTH_URL"
+  export REACT_APP_LOBBY_URL="wss://DEV_LOBBY_URL"
+  export REACT_APP_GAME_APPLICATION_ID="DEV_APPLICATION_ID"
+
+  # deployment info
+  export S3_BUCKET_NAME="S3_DEV_BUCKET_NAME"
+  export S3_BUCKET_PATH="S3_DEV_BUCKET_PATH"
+  export DISTRIBUTION_ID="DEV_DISTRIBUTION_ID"
+
+else
+  # connection info
+  export REACT_APP_AUTH_URL="https://AUTH_URL"
+  export REACT_APP_LOBBY_URL="wss://LOBBY_URL"
+  export REACT_APP_GAME_APPLICATION_ID="APPLICATION_ID"
+
+  # deployment info
+  export S3_BUCKET_NAME="S3_BUCKET_NAME"
+  export S3_BUCKET_PATH="S3_BUCKET_PATH"
+  export DISTRIBUTION_ID="DISTRIBUTION_ID"
+
+fi
+
